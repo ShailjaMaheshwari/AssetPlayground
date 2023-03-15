@@ -1,10 +1,9 @@
 import { Server, ServerApi, Operation } from "stellar-sdk";
-
+//const server =new Server ("https://wrapper.kinesisgroup.io/assets/1");
 const server = new Server("https://horizon-testnet.stellar.org");
 const custodianId = "GAHYA5Z4UWR6Z552XNWVYXXLM6CIU5OV3CT5BB2OQ4A2U5UZ4V6T6K3V";
-const tx_hash = "TEST";//"dswHXagyk/Y7mjm+a04/kUGm08aYpubPGvzsmatwA6s=";
-const creationDate = new Date("2023-03-03 07:25:19 UTC");//("2023-02-17 00:58:08 UTC");
-
+const tx_hash = "TEST"; //"dswHXagyk/Y7mjm+a04/kUGm08aYpubPGvzsmatwA6s=";
+const creationDate = new Date("2023-03-03 07:25:19 UTC"); //("2023-02-17 00:58:08 UTC");
 
 async function hasBurnOperationAlreadyHappened(
   custodianId: string,
@@ -16,34 +15,52 @@ async function hasBurnOperationAlreadyHappened(
     .forAccount(custodianId)
     .order("desc")
     .call();
-    //console.log(operations);
   let burnOperationExists = false;
   while (operations.records.length) {
-    //console.log("checkpoint 1-------");
-    operations.records.forEach(async (record) => {
-      let burnOperationExists = false;
+    for (let i = 0; i < operations.records.length; i++) {
+      const record = operations.records[i];
       if (
-        new Date(record.created_at) <= creationDate &&
+        new Date(record.created_at) >= creationDate &&
         record.type === "payment" &&
         record.asset_type === "native" &&
-        record.to === custodianId
+        record.source_account === custodianId
       ) {
-        console.log("checkpoint 3-------");
         const tx = await record.transaction();
         if (tx.memo === tx_hash) {
-          console.log(" found memo", record.transaction_hash);
           burnOperationExists = true;
-          console.log("TRUE: ", tx.memo);
+          break;
         }
       }
-    });
-    if (!burnOperationExists) operations = await operations.next();
-    //console.log("found or not:- - ", burnOperationExists);
+      if (burnOperationExists) break;
+      operations = await operations.next();
+    }
+    console.log("found: " + burnOperationExists);
+    return burnOperationExists;
   }
+  // while (operations.records.length) {
+  //   operations.records.forEach(async (record) => {
+  //     let burnOperationExists = false;
+  //     if (
+  //       new Date(record.created_at) >= creationDate &&
+  //       record.type === "payment" &&
+  //       record.asset_type === "native" &&
+  //       record.source_account === custodianId
+  //     ) {
+  //       const tx = await record.transaction();
+  //       if (tx.memo === tx_hash) {
+  //         console.log(" found memo", record.transaction_hash);
+  //         burnOperationExists = true;
+  //         //console.log("TRUE: ", tx.memo);
+  //         return burnOperationExists;
+  //       }
+  //     }
+  //   });
+  //   if (!burnOperationExists) operations = await operations.next();
+  // }
+  // return burnOperationExists;
 }
 
-hasBurnOperationAlreadyHappened(custodianId,tx_hash,creationDate);
-
+hasBurnOperationAlreadyHappened(custodianId, tx_hash, creationDate);
 
 //====================================================================
 //=====================================================================
