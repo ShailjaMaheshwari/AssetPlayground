@@ -1,9 +1,10 @@
-import { Server, ServerApi, Operation } from "stellar-sdk";
-//const server =new Server ("https://wrapper.kinesisgroup.io/assets/1");
-const server = new Server("https://horizon-testnet.stellar.org");
-const custodianId = "GAHYA5Z4UWR6Z552XNWVYXXLM6CIU5OV3CT5BB2OQ4A2U5UZ4V6T6K3V";
-const tx_hash = "TEST"; //"dswHXagyk/Y7mjm+a04/kUGm08aYpubPGvzsmatwA6s=";
-const creationDate = new Date("2023-03-03 07:25:19 UTC"); //("2023-02-17 00:58:08 UTC");
+import { Server, ServerApi, Operation } from "@abx/js-kinesis-sdk" ;// "stellar-sdk";
+const server =new Server ("https://devnet.kinesisgroup.io");
+//const server = new Server("https://horizon-testnet.stellar.org");
+const custodianId = "GBGNSAQAU7HZLE7SPR6LCY3LSORD2TV3I2Y647LDUIE2CCKKOALOKEP6"; //"GAHYA5Z4UWR6Z552XNWVYXXLM6CIU5OV3CT5BB2OQ4A2U5UZ4V6T6K3V";
+const tx_hash = "hfNDHmFPRHrN/uSVBlwnSfYvNCwT3Or2tfutVumX6H8=";//"TEST"; //"dswHXagyk/Y7mjm+a04/kUGm08aYpubPGvzsmatwA6s=";
+const creationDate = new Date("2023-02-28T05:35:58Z"); //("2023-02-17 00:58:08 UTC");//  "created_at": "2023-02-28T05:35:58Z",
+
 
 async function hasBurnOperationAlreadyHappened(
   custodianId: string,
@@ -15,28 +16,38 @@ async function hasBurnOperationAlreadyHappened(
     .forAccount(custodianId)
     .order("desc")
     .call();
+  //  console.log(operations);
   let burnOperationExists = false;
   while (operations.records.length) {
     for (let i = 0; i < operations.records.length; i++) {
+      console.log(operations.records.length);
+      console.log("i: ", i);
       const record = operations.records[i];
       if (
         new Date(record.created_at) >= creationDate &&
         record.type === "payment" &&
-        record.asset_type === "native" &&
+        //record.asset_type === "native" &&
         record.source_account === custodianId
       ) {
+        console.log("checkpoint 1=====");
         const tx = await record.transaction();
-        if (tx.memo === tx_hash) {
+        if (tx.memo === tx_hash) { 
+          console.log("checkpoint 2 ---", tx.memo);
           burnOperationExists = true;
           break;
         }
       }
-      if (burnOperationExists) break;
-      operations = await operations.next();
     }
-    console.log("found: " + burnOperationExists);
-    return burnOperationExists;
+    if (burnOperationExists) break;
+      operations = await operations.next();
+    
   }
+  console.log("found: " + burnOperationExists);
+    return burnOperationExists;
+}
+
+hasBurnOperationAlreadyHappened(custodianId, tx_hash, creationDate);
+
   // while (operations.records.length) {
   //   operations.records.forEach(async (record) => {
   //     let burnOperationExists = false;
@@ -58,9 +69,8 @@ async function hasBurnOperationAlreadyHappened(
   //   if (!burnOperationExists) operations = await operations.next();
   // }
   // return burnOperationExists;
-}
+//}
 
-hasBurnOperationAlreadyHappened(custodianId, tx_hash, creationDate);
 
 //====================================================================
 //=====================================================================
